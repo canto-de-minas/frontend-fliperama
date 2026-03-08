@@ -1,8 +1,8 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
-  "productName": "LIS - Advertisement",
+  "productName": "LIS - Fliperama",
   "version": "0.1.0",
-  "identifier": "com.lis.advertisement",
+  "identifier": "com.lis.fliperama",
   "build": {
     "frontendDist": "../dist",
     "devUrl": "http://localhost:5173",
@@ -13,43 +13,14 @@
     "windows": [
       {
         "label": "main",
-        "title": "LIS - Advertisement",
-        "width": 1200,
-        "height": 700,
-        "resizable": false,
-        "fullscreen": false,
-        "decorations": true,
-        "transparent": true,
-        "alwaysOnTop": true,
-        "skipTaskbar": true
-      },
-      {
-        "label": "overlay",
-        "url": "/player",
-        "visible": false,
+        "visible": true,
         "resizable": false,
         "fullscreen": true,
         "decorations": false,
         "transparent": true,
         "alwaysOnTop": true,
         "skipTaskbar": true,
-        "focus": false,
-        "create": false
-      },
-      {
-        "label": "overlay_mini",
-        "url": "/player-mini",
-        "visible": false,
-        "resizable": false,
-        "fullscreen": false,
-        "decorations": false,
-        "transparent": true,
-        "alwaysOnTop": true,
-        "skipTaskbar": true,
-        "focus": false,
-        "create": false,
-        "width": 560,
-        "height": 120
+        "focus": false
       }
     ],
     "security": {
@@ -61,7 +32,7 @@
       "capabilities": [
         {
           "identifier": "default",
-          "windows": ["main", "overlay", "overlay_mini"],
+          "windows": ["main"],
           "permissions": [
             "core:window:allow-show",
             "core:window:allow-hide",

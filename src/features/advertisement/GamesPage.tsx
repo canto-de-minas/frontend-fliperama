@@ -238,8 +238,8 @@ export function GamesPage() {
 
   return (
     <div className="grid h-screen w-screen grid-cols-[420px_1fr] overflow-hidden bg-zinc-950 text-white">
-      <aside className="flex h-full flex-col border-r border-zinc-800 bg-zinc-900">
-        <div className="border-b border-zinc-800 px-5 py-4">
+      <aside className="flex h-full min-h-0 flex-col border-r border-zinc-800 bg-zinc-900">
+        <div className="shrink-0 border-b border-zinc-800 bg-zinc-900 px-5 py-4">
           <div className="flex items-center justify-between gap-3">
             <div className="min-w-0">
               <h1 className="truncate text-lg font-semibold">{platform.name}</h1>

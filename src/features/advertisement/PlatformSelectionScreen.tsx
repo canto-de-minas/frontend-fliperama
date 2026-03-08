@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { exit } from "@tauri-apps/plugin-process";
 import {
   listHyperspinPlatforms,
   type HyperspinPlatformTheme,
@@ -23,11 +24,31 @@ export function PlatformSelectionScreen({
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [loadingPlatforms, setLoadingPlatforms] = useState(false);
   const [platformsError, setPlatformsError] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const itemRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
+
+  const filteredPlatforms = useMemo(() => {
+    const normalizedSearch = searchTerm.trim().toLowerCase();
+
+    if (!normalizedSearch) {
+      return platforms;
+    }
+
+    return platforms.filter((platform) =>
+      platform.name.toLowerCase().includes(normalizedSearch),
+    );
+  }, [platforms, searchTerm]);
 
   const selectedPlatform = useMemo(() => {
-    if (platforms.length === 0) return null;
-    return platforms[Math.min(selectedIndex, platforms.length - 1)] ?? null;
-  }, [platforms, selectedIndex]);
+    if (filteredPlatforms.length === 0) return null;
+    return (
+      filteredPlatforms[
+        Math.min(selectedIndex, filteredPlatforms.length - 1)
+      ] ?? null
+    );
+  }, [filteredPlatforms, selectedIndex]);
 
   const loadPlatforms = useCallback(async () => {
     setLoadingPlatforms(true);
@@ -52,6 +73,19 @@ export function PlatformSelectionScreen({
   }, [visible, loadPlatforms]);
 
   useEffect(() => {
+    setSelectedIndex(0);
+  }, [searchTerm]);
+
+  useEffect(() => {
+    if (!selectedPlatform) return;
+
+    const element = itemRefs.current[selectedPlatform.themeZipPath];
+    element?.scrollIntoView({
+      block: "nearest",
+    });
+  }, [selectedPlatform]);
+
+  useEffect(() => {
     if (!visible) return;
 
     if (!selectedPlatform) {
@@ -64,14 +98,37 @@ export function PlatformSelectionScreen({
 
   useEffect(() => {
     if (!visible) return;
+    searchInputRef.current?.focus();
+  }, [visible]);
+
+  useEffect(() => {
+    if (!visible) return;
 
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (platforms.length === 0) return;
+      const target = event.target as HTMLElement | null;
+      const tagName = target?.tagName?.toLowerCase() ?? "";
+      const isTypingField =
+        tagName === "input" ||
+        tagName === "textarea" ||
+        target?.isContentEditable === true;
+
+      if (event.ctrlKey && event.shiftKey && event.key.toLowerCase() === "f") {
+        event.preventDefault();
+        event.stopPropagation();
+
+        exit(0).catch((error) => {
+          console.error("Erro ao encerrar aplicação:", error);
+        });
+
+        return;
+      }
+
+      if (filteredPlatforms.length === 0) return;
 
       if (event.key === "ArrowUp") {
         event.preventDefault();
         setSelectedIndex((currentIndex) =>
-          currentIndex <= 0 ? platforms.length - 1 : currentIndex - 1,
+          currentIndex <= 0 ? filteredPlatforms.length - 1 : currentIndex - 1,
         );
         return;
       }
@@ -79,12 +136,12 @@ export function PlatformSelectionScreen({
       if (event.key === "ArrowDown") {
         event.preventDefault();
         setSelectedIndex((currentIndex) =>
-          currentIndex >= platforms.length - 1 ? 0 : currentIndex + 1,
+          currentIndex >= filteredPlatforms.length - 1 ? 0 : currentIndex + 1,
         );
         return;
       }
 
-      if (event.key === "Enter" && selectedPlatform) {
+      if (event.key === "Enter" && selectedPlatform && !isTypingField) {
         event.preventDefault();
         void onSelectPlatform(selectedPlatform);
       }
@@ -95,16 +152,27 @@ export function PlatformSelectionScreen({
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [visible, platforms.length, selectedPlatform, onSelectPlatform]);
+  }, [visible, filteredPlatforms.length, selectedPlatform, onSelectPlatform]);
 
   if (!visible) return null;
 
   return (
     <div className="grid h-screen w-screen grid-cols-[360px_1fr] overflow-hidden bg-zinc-950 text-white">
-      <aside className="flex h-full flex-col border-r border-zinc-800 bg-zinc-900">
-        <div className="border-b border-zinc-800 px-5 py-4">
+      <aside className="flex h-full min-h-0 flex-col border-r border-zinc-800 bg-zinc-900">
+        <div className="shrink-0 border-b border-zinc-800 bg-zinc-900 px-5 py-4">
           <h1 className="text-lg font-semibold">Escolha a plataforma</h1>
           <p className="mt-1 text-sm text-zinc-400">{themesBasePath}</p>
+
+          <div className="mt-4">
+            <input
+              ref={searchInputRef}
+              type="text"
+              value={searchTerm}
+              onChange={(event) => setSearchTerm(event.target.value)}
+              placeholder="Filtrar por nome..."
+              className="w-full rounded border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-white outline-none placeholder:text-zinc-500 focus:border-zinc-500"
+            />
+          </div>
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto">
@@ -116,18 +184,23 @@ export function PlatformSelectionScreen({
             <div className="px-5 py-4 text-sm text-red-500">
               {platformsError}
             </div>
-          ) : platforms.length === 0 ? (
+          ) : filteredPlatforms.length === 0 ? (
             <div className="px-5 py-4 text-sm text-zinc-500">
-              Nenhuma plataforma encontrada.
+              {searchTerm.trim()
+                ? "Nenhuma plataforma encontrada para esse filtro."
+                : "Nenhuma plataforma encontrada."}
             </div>
           ) : (
             <ul className="py-2">
-              {platforms.map((platform, index) => {
+              {filteredPlatforms.map((platform, index) => {
                 const isSelected = index === selectedIndex;
 
                 return (
                   <li key={platform.themeZipPath}>
                     <button
+                      ref={(element) => {
+                        itemRefs.current[platform.themeZipPath] = element;
+                      }}
                       type="button"
                       onMouseEnter={() => setSelectedIndex(index)}
                       onClick={() => void onSelectPlatform(platform)}
