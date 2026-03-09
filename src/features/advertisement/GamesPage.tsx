@@ -70,6 +70,7 @@ export function GamesPage() {
   const [gamesError, setGamesError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [searchVisible, setSearchVisible] = useState(false);
+  const [launchingGameName, setLaunchingGameName] = useState<string | null>(null);
 
   const wheelContainerRef = useRef<HTMLDivElement | null>(null);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
@@ -151,6 +152,26 @@ export function GamesPage() {
     }
   }, [searchVisible]);
 
+  const launchGame = useCallback(
+    async (game: HyperspinGame) => {
+      if (!platform || launchingGameName) return;
+
+      setLaunchingGameName(game.name);
+
+      try {
+        await launchSelectedGame({
+          platformName: platform.name,
+          romName: game.name,
+        });
+      } catch (error) {
+        console.error("Erro ao executar jogo:", error);
+      } finally {
+        setLaunchingGameName(null);
+      }
+    },
+    [launchingGameName, platform],
+  );
+
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement | null;
@@ -183,14 +204,7 @@ export function GamesPage() {
 
       if (event.key === "Enter" && selectedGame && !isTypingField) {
         event.preventDefault();
-
-        launchSelectedGame({
-          platformName: platform?.name ?? "",
-          romName: selectedGame.name,
-        }).catch((error) => {
-          console.error("Erro ao executar jogo:", error);
-        });
-
+        void launchGame(selectedGame);
         return;
       }
 
@@ -224,6 +238,7 @@ export function GamesPage() {
     searchTerm,
     searchVisible,
     selectedGame,
+    launchGame,
   ]);
 
   if (!platform) {
@@ -266,6 +281,12 @@ export function GamesPage() {
             placeholder="Filtrar jogo..."
             className="w-full rounded-xl border border-zinc-700 bg-black/75 px-4 py-3 text-sm text-white outline-none backdrop-blur-md placeholder:text-zinc-500 focus:border-zinc-500"
           />
+        </div>
+      ) : null}
+
+      {launchingGameName ? (
+        <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/35 text-base font-semibold text-zinc-100">
+          Carregando {launchingGameName}...
         </div>
       ) : null}
 
@@ -322,15 +343,9 @@ export function GamesPage() {
               <button
                 key={game.name}
                 type="button"
-                onClick={() => {
-                  launchSelectedGame({
-                    platformName: platform.name,
-                    romName: game.name,
-                  }).catch((error) => {
-                    console.error("Erro ao executar jogo:", error);
-                  });
-                }}
-                className="absolute left-0 origin-left text-left transition-all duration-200 ease-out"
+                onClick={() => void launchGame(game)}
+                disabled={Boolean(launchingGameName)}
+                className="absolute left-0 origin-left text-left transition-all duration-200 ease-out disabled:cursor-wait"
                 style={{
                   transform: `translate(${translateX}px, ${translateY}px) scale(${scale})`,
                   opacity,

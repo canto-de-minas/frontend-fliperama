@@ -34,7 +34,7 @@ fn launch_mame(mame_path: String, rom_name: String, roms_dir: String) -> Result<
         return Err(format!("Pasta de ROMs não encontrada em: {}", roms_dir));
     }
 
-    let mut child = Command::new(&mame_path)
+    Command::new(&mame_path)
         .arg("-rompath")
         .arg(&roms_dir)
         .arg(&rom_name)
@@ -45,13 +45,6 @@ fn launch_mame(mame_path: String, rom_name: String, roms_dir: String) -> Result<
                 mame_path, roms_dir, rom_name, e
             )
         })?;
-
-    child.wait().map_err(|e| {
-        format!(
-            "MAME foi iniciado mas falhou ao aguardar fechamento. mame_path='{}', roms_dir='{}', rom_name='{}', erro='{}'",
-            mame_path, roms_dir, rom_name, e
-        )
-    })?;
 
     Ok(())
 }
