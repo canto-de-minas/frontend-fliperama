@@ -1,14 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import MiniOverlayController from "../../../components/overlay/MiniOverlayController";
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import {
-  getStoredMiniHeight,
-  getStoredMiniPlacement,
-} from "../../../components/overlay/MiniOverlaySettings";
+import { getStoredMiniPlacement } from "../../../components/overlay/MiniOverlaySettings";
 
 const SESSION_STORAGE_KEY = "arcade-play-session";
-const MIN_W = 160;
-const MAX_W = 460;
+const MINI_OVERLAY_WIDTH = 120;
+const MINI_OVERLAY_HEIGHT = 70;
 
 function formatSeconds(remainingSeconds: number) {
   const minutes = Math.floor(remainingSeconds / 60)
@@ -35,11 +32,10 @@ export function SessionMiniOverlayPage() {
     readSessionRemainingSeconds(),
   );
 
-  const miniHeight = useMemo(() => getStoredMiniHeight(), []);
   const placement = useMemo(() => getStoredMiniPlacement(), []);
-  const miniWidth = useMemo(
-    () => Math.max(MIN_W, Math.min(MAX_W, Math.round(miniHeight * 2.7))),
-    [miniHeight],
+  const formatted = useMemo(
+    () => formatSeconds(remainingSeconds),
+    [remainingSeconds],
   );
 
   useEffect(() => {
@@ -54,7 +50,6 @@ export function SessionMiniOverlayPage() {
       window.removeEventListener("storage", sync);
     };
   }, []);
-
 
   useEffect(() => {
     const w = getCurrentWindow();
@@ -77,28 +72,27 @@ export function SessionMiniOverlayPage() {
     };
   }, []);
 
-  const formatted = useMemo(
-    () => formatSeconds(remainingSeconds),
-    [remainingSeconds],
-  );
-
   return (
     <div className="mini-root bg-transparent">
       <MiniOverlayController
         showSeconds={24 * 60 * 60}
         intervalMinutes={24 * 60}
         placement={placement}
-        width={miniWidth}
-        height={miniHeight}
+        width={MINI_OVERLAY_WIDTH}
+        height={MINI_OVERLAY_HEIGHT}
         margin={16}
         transparentBody
       >
         {(visible) =>
           visible ? (
-            <div className="mini-root flex items-center justify-end p-2">
-              <div className="rounded-md border border-zinc-700/80 bg-black/70 px-3 py-2 text-right text-zinc-100 shadow-lg backdrop-blur-sm">
-                <div className="text-[11px] font-semibold">Tempo restante</div>
-                <div className="font-mono text-base">{formatted}</div>
+            <div className="h-full w-full">
+              <div className="flex h-full w-full flex-col justify-center bg-black/70 px-3 py-5 text-right text-zinc-100">
+                <div className="text-[11px] font-semibold leading-none">
+                  Tempo restante
+                </div>
+                <div className="mt-1 font-mono text-base leading-none">
+                  {formatted}
+                </div>
               </div>
             </div>
           ) : null
