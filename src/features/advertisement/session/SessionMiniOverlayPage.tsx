@@ -1,7 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import MiniOverlayController from "../../../components/overlay/MiniOverlayController";
+import {
+  getStoredMiniHeight,
+  getStoredMiniPlacement,
+} from "../../../components/overlay/MiniOverlaySettings";
 
 const SESSION_STORAGE_KEY = "arcade-play-session";
+const MIN_W = 160;
+const MAX_W = 460;
 
 function formatSeconds(remainingSeconds: number) {
   const minutes = Math.floor(remainingSeconds / 60)
@@ -28,6 +34,13 @@ export function SessionMiniOverlayPage() {
     readSessionRemainingSeconds(),
   );
 
+  const miniHeight = useMemo(() => getStoredMiniHeight(), []);
+  const placement = useMemo(() => getStoredMiniPlacement(), []);
+  const miniWidth = useMemo(
+    () => Math.max(MIN_W, Math.min(MAX_W, Math.round(miniHeight * 2.7))),
+    [miniHeight],
+  );
+
   useEffect(() => {
     const sync = () => setRemainingSeconds(readSessionRemainingSeconds());
 
@@ -47,25 +60,27 @@ export function SessionMiniOverlayPage() {
   );
 
   return (
-    <MiniOverlayController
-      showSeconds={24 * 60 * 60}
-      intervalMinutes={24 * 60}
-      placement="topRight"
-      width={260}
-      height={90}
-      margin={20}
-      transparentBody
-    >
-      {(visible) =>
-        visible ? (
-          <div className="mini-root flex items-center justify-end p-2">
-            <div className="rounded-md border border-zinc-700/80 bg-black/70 px-3 py-2 text-right text-zinc-100 shadow-lg backdrop-blur-sm">
-              <div className="text-[11px] font-semibold">Tempo restante</div>
-              <div className="font-mono text-base">{formatted}</div>
+    <div className="mini-root bg-transparent">
+      <MiniOverlayController
+        showSeconds={24 * 60 * 60}
+        intervalMinutes={24 * 60}
+        placement={placement}
+        width={miniWidth}
+        height={miniHeight}
+        margin={16}
+        transparentBody
+      >
+        {(visible) =>
+          visible ? (
+            <div className="mini-root flex items-center justify-end p-2">
+              <div className="rounded-md border border-zinc-700/80 bg-black/70 px-3 py-2 text-right text-zinc-100 shadow-lg backdrop-blur-sm">
+                <div className="text-[11px] font-semibold">Tempo restante</div>
+                <div className="font-mono text-base">{formatted}</div>
+              </div>
             </div>
-          </div>
-        ) : null
-      }
-    </MiniOverlayController>
+          ) : null
+        }
+      </MiniOverlayController>
+    </div>
   );
 }

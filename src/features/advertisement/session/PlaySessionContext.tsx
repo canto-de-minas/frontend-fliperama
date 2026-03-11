@@ -1,5 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
 import { invoke } from "@tauri-apps/api/core";
+import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
 import {
   createContext,
   useCallback,
@@ -27,10 +28,23 @@ type PlaySessionContextValue = {
 
 const PlaySessionContext = createContext<PlaySessionContextValue | null>(null);
 
+async function openMiniOverlayWindow() {
+  await invoke("ensure_overlay_mini_window");
+  const overlayMini = await WebviewWindow.getByLabel("overlay_mini");
+  await overlayMini?.show();
+  await overlayMini?.unminimize();
+}
+
+async function closeMiniOverlayWindow() {
+  await invoke("close_overlay_mini_window");
+}
+
 export function PlaySessionProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<SessionStatus>("idle");
   const [selectedDurationMinutes, setSelectedDurationMinutes] = useState<number | null>(null);
   const [remainingSeconds, setRemainingSeconds] = useState(0);
+
+  const isSessionActive = status === "active" && remainingSeconds > 0;
 
   const startSession = useCallback((minutes: number) => {
     if (!Number.isFinite(minutes) || minutes <= 0) return;
@@ -65,7 +79,7 @@ export function PlaySessionProvider({ children }: { children: ReactNode }) {
   }, [status]);
 
   useEffect(() => {
-    if (status === "active" && remainingSeconds > 0) {
+    if (isSessionActive) {
       localStorage.setItem(
         SESSION_STORAGE_KEY,
         JSON.stringify({
@@ -75,19 +89,24 @@ export function PlaySessionProvider({ children }: { children: ReactNode }) {
           updatedAt: Date.now(),
         }),
       );
+      return;
+    }
 
-      invoke("ensure_overlay_mini_window").catch(() => {
+    localStorage.removeItem(SESSION_STORAGE_KEY);
+  }, [isSessionActive, remainingSeconds, selectedDurationMinutes, status]);
+
+  useEffect(() => {
+    if (isSessionActive) {
+      openMiniOverlayWindow().catch(() => {
         // ambiente web/dev sem runtime tauri
       });
       return;
     }
 
-    localStorage.removeItem(SESSION_STORAGE_KEY);
-
-    invoke("close_overlay_mini_window").catch(() => {
+    closeMiniOverlayWindow().catch(() => {
       // ambiente web/dev sem runtime tauri
     });
-  }, [remainingSeconds, selectedDurationMinutes, status]);
+  }, [isSessionActive]);
 
   const value = useMemo<PlaySessionContextValue>(
     () => ({
@@ -97,9 +116,9 @@ export function PlaySessionProvider({ children }: { children: ReactNode }) {
       remainingSeconds,
       startSession,
       resetSession,
-      isSessionActive: status === "active" && remainingSeconds > 0,
+      isSessionActive,
     }),
-    [remainingSeconds, resetSession, selectedDurationMinutes, startSession, status],
+    [isSessionActive, remainingSeconds, resetSession, selectedDurationMinutes, startSession, status],
   );
 
   return (
