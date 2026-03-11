@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import MiniOverlayController from "../../../components/overlay/MiniOverlayController";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import {
   getStoredMiniHeight,
   getStoredMiniPlacement,
@@ -51,6 +52,28 @@ export function SessionMiniOverlayPage() {
     return () => {
       window.clearInterval(timer);
       window.removeEventListener("storage", sync);
+    };
+  }, []);
+
+
+  useEffect(() => {
+    const w = getCurrentWindow();
+
+    const repin = () => {
+      w.setAlwaysOnTop(true).catch(() => {});
+      w.show().catch(() => {});
+      w.unminimize().catch(() => {});
+    };
+
+    repin();
+    const timer = window.setInterval(repin, 1200);
+    window.addEventListener("focus", repin);
+    document.addEventListener("visibilitychange", repin);
+
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener("focus", repin);
+      document.removeEventListener("visibilitychange", repin);
     };
   }, []);
 

@@ -1,6 +1,7 @@
 /* eslint-disable react-refresh/only-export-components */
 import { invoke } from "@tauri-apps/api/core";
 import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import {
   createContext,
   useCallback,
@@ -114,6 +115,16 @@ export function PlaySessionProvider({ children }: { children: ReactNode }) {
     }
 
     closeMiniOverlayWindow().catch(() => {
+      // ambiente web/dev sem runtime tauri
+    });
+  }, [isMiniOverlayWindow, isSessionActive]);
+
+
+  useEffect(() => {
+    if (isMiniOverlayWindow) return;
+
+    const main = getCurrentWindow();
+    main.setAlwaysOnTop(!isSessionActive).catch(() => {
       // ambiente web/dev sem runtime tauri
     });
   }, [isMiniOverlayWindow, isSessionActive]);
