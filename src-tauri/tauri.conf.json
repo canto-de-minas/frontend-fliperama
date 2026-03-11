@@ -21,6 +21,20 @@
         "alwaysOnTop": true,
         "skipTaskbar": true,
         "focus": false
+      },
+      {
+        "label": "overlay_mini",
+        "url": "/player-mini",
+        "visible": false,
+        "resizable": false,
+        "fullscreen": false,
+        "decorations": false,
+        "transparent": true,
+        "alwaysOnTop": true,
+        "skipTaskbar": true,
+        "focus": false,
+        "width": 260,
+        "height": 90
       }
     ],
     "security": {
@@ -41,7 +55,8 @@
         {
           "identifier": "default",
           "windows": [
-            "main"
+            "main",
+            "overlay_mini"
           ],
           "permissions": [
             "core:window:allow-show",

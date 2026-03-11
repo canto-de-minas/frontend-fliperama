@@ -159,6 +159,15 @@ fn restore_foreground_window(state: State<'_, FocusState>) {
 }
 
 #[tauri::command]
+fn close_overlay_mini_window(app: AppHandle) -> Result<(), String> {
+  if let Some(overlay_mini) = app.get_webview_window("overlay_mini") {
+    overlay_mini.close().map_err(|e| e.to_string())?;
+  }
+
+  Ok(())
+}
+
+#[tauri::command]
 fn stop_running_overlays(app: AppHandle) -> Result<(), String> {
   if let Some(overlay) = app.get_webview_window("overlay") {
     overlay.close().map_err(|e| e.to_string())?;
@@ -169,6 +178,36 @@ fn stop_running_overlays(app: AppHandle) -> Result<(), String> {
   }
 
   Ok(())
+}
+
+
+#[tauri::command]
+fn stop_active_game() -> Result<(), String> {
+    #[cfg(target_os = "windows")]
+    {
+        let output = Command::new("taskkill")
+            .arg("/IM")
+            .arg("mame.exe")
+            .arg("/F")
+            .output()
+            .map_err(|e| format!("Falha ao executar taskkill: {}", e))?;
+
+        if output.status.success() {
+            return Ok(());
+        }
+
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        if stderr.contains("not found") || stderr.contains("nenhuma instância") || stderr.contains("não foi encontrado") {
+            return Ok(());
+        }
+
+        return Err(format!("Falha ao encerrar mame.exe: {}", stderr.trim()));
+    }
+
+    #[cfg(not(target_os = "windows"))]
+    {
+        Ok(())
+    }
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -182,8 +221,10 @@ pub fn run() {
       restore_foreground_window,
       ensure_overlay_window,
       ensure_overlay_mini_window,
+      close_overlay_mini_window,
       stop_running_overlays,
       launch_mame,
+      stop_active_game,
       quit_app
     ])
     .setup(|app| {

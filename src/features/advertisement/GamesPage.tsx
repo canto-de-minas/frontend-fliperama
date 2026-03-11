@@ -1,3 +1,4 @@
+import { invoke } from "@tauri-apps/api/core";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import type { HyperspinPlatformTheme } from "../../services/hyperspinPlatformThemesService";
@@ -6,6 +7,7 @@ import {
   type HyperspinGame,
 } from "../../services/hyperspinGamesService";
 import { launchSelectedGame } from "../../services/emulatorLauncher";
+import { usePlaySession } from "./session/PlaySessionContext";
 
 type GamesPageLocationState = {
   platform: HyperspinPlatformTheme;
@@ -63,6 +65,7 @@ export function GamesPage() {
   const location = useLocation();
   const state = (location.state as GamesPageLocationState | null) ?? null;
   const platform = state?.platform ?? null;
+  const { isSessionActive, status, resetSession } = usePlaySession();
 
   const [games, setGames] = useState<HyperspinGame[]>([]);
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -88,6 +91,15 @@ export function GamesPage() {
     window.addEventListener("focus", handleWindowFocus);
     return () => window.removeEventListener("focus", handleWindowFocus);
   }, []);
+  useEffect(() => {
+    if (status !== "expired") return;
+
+    invoke("stop_active_game").catch((error) => {
+      console.error("Erro ao encerrar jogo ativo:", error);
+    });
+    navigate("/", { replace: true });
+    resetSession();
+  }, [navigate, resetSession, status]);
 
   const filteredGames = useMemo(() => {
     const normalizedSearch = searchTerm.trim().toLowerCase();
@@ -288,6 +300,23 @@ export function GamesPage() {
     launchGame,
     keyboardUnlockAt,
   ]);
+
+  if (!isSessionActive) {
+    return (
+      <div className="flex h-screen w-screen items-center justify-center bg-zinc-950 text-white">
+        <div className="text-center">
+          <div className="text-lg font-semibold">Sessão expirada ou não iniciada</div>
+          <button
+            type="button"
+            onClick={() => navigate("/", { replace: true })}
+            className="mt-4 rounded bg-zinc-800 px-4 py-2 text-sm text-white"
+          >
+            Voltar para pagamento
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (!platform) {
     return (

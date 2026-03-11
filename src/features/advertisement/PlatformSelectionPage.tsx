@@ -1,11 +1,25 @@
-import { useCallback } from "react";
+import { useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import type { HyperspinPlatformTheme } from "../../services/hyperspinPlatformThemesService";
 import { PlatformSelectionScreen } from "./PlatformSelectionScreen";
 import { HyperspinThemeProvider } from "../../app/provider/HyperspinThemeProvider";
+import { usePlaySession } from "./session/PlaySessionContext";
+import { PaymentTimeSelectionScreen } from "./PaymentTimeSelectionScreen";
 
 export function PlatformSelectionPage() {
   const navigate = useNavigate();
+  const {
+    durationOptionsMinutes,
+    isSessionActive,
+    startSession,
+    status,
+    resetSession,
+  } = usePlaySession();
+
+  useEffect(() => {
+    if (status !== "expired") return;
+    resetSession();
+  }, [resetSession, status]);
 
   const handleSelectPlatform = useCallback(
     async (platform: HyperspinPlatformTheme) => {
@@ -20,7 +34,14 @@ export function PlatformSelectionPage() {
 
   return (
     <HyperspinThemeProvider>
-      <PlatformSelectionScreen onSelectPlatform={handleSelectPlatform} />
+      {isSessionActive ? (
+        <PlatformSelectionScreen onSelectPlatform={handleSelectPlatform} />
+      ) : (
+        <PaymentTimeSelectionScreen
+          durationOptionsMinutes={durationOptionsMinutes}
+          onSelectDuration={startSession}
+        />
+      )}
     </HyperspinThemeProvider>
   );
 }
