@@ -3,7 +3,6 @@ import { HyperspinThemeProvider } from "./provider/HyperspinThemeProvider";
 import { ThemeProvider } from "./provider/ThemeProviderContext";
 import { AppRoutes } from "./routers/AppRoutes";
 import { PlaySessionProvider } from "../features/advertisement/session/PlaySessionContext";
-import { SessionTimerOverlay } from "../features/advertisement/session/SessionTimerOverlay";
 
 export default function App() {
   return (
@@ -11,7 +10,6 @@ export default function App() {
       <HyperspinThemeProvider>
         <AppProvider>
           <PlaySessionProvider>
-            <SessionTimerOverlay />
             <AppRoutes />
           </PlaySessionProvider>
         </AppProvider>

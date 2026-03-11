@@ -159,6 +159,15 @@ fn restore_foreground_window(state: State<'_, FocusState>) {
 }
 
 #[tauri::command]
+fn close_overlay_mini_window(app: AppHandle) -> Result<(), String> {
+  if let Some(overlay_mini) = app.get_webview_window("overlay_mini") {
+    overlay_mini.close().map_err(|e| e.to_string())?;
+  }
+
+  Ok(())
+}
+
+#[tauri::command]
 fn stop_running_overlays(app: AppHandle) -> Result<(), String> {
   if let Some(overlay) = app.get_webview_window("overlay") {
     overlay.close().map_err(|e| e.to_string())?;
@@ -212,6 +221,7 @@ pub fn run() {
       restore_foreground_window,
       ensure_overlay_window,
       ensure_overlay_mini_window,
+      close_overlay_mini_window,
       stop_running_overlays,
       launch_mame,
       stop_active_game,

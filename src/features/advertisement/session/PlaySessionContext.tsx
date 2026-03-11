@@ -1,4 +1,5 @@
 /* eslint-disable react-refresh/only-export-components */
+import { invoke } from "@tauri-apps/api/core";
 import {
   createContext,
   useCallback,
@@ -10,6 +11,7 @@ import {
 } from "react";
 
 const DEFAULT_MINUTES_OPTIONS = [5, 10, 15] as const;
+const SESSION_STORAGE_KEY = "arcade-play-session";
 
 type SessionStatus = "idle" | "active" | "expired";
 
@@ -61,6 +63,31 @@ export function PlaySessionProvider({ children }: { children: ReactNode }) {
 
     return () => window.clearInterval(timer);
   }, [status]);
+
+  useEffect(() => {
+    if (status === "active" && remainingSeconds > 0) {
+      localStorage.setItem(
+        SESSION_STORAGE_KEY,
+        JSON.stringify({
+          remainingSeconds,
+          selectedDurationMinutes,
+          status,
+          updatedAt: Date.now(),
+        }),
+      );
+
+      invoke("ensure_overlay_mini_window").catch(() => {
+        // ambiente web/dev sem runtime tauri
+      });
+      return;
+    }
+
+    localStorage.removeItem(SESSION_STORAGE_KEY);
+
+    invoke("close_overlay_mini_window").catch(() => {
+      // ambiente web/dev sem runtime tauri
+    });
+  }, [remainingSeconds, selectedDurationMinutes, status]);
 
   const value = useMemo<PlaySessionContextValue>(
     () => ({
