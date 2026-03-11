@@ -45,6 +45,7 @@ export function PlaySessionProvider({ children }: { children: ReactNode }) {
   const [remainingSeconds, setRemainingSeconds] = useState(0);
 
   const isSessionActive = status === "active" && remainingSeconds > 0;
+  const isMiniOverlayWindow = window.location.pathname === "/player-mini";
 
   const startSession = useCallback((minutes: number) => {
     if (!Number.isFinite(minutes) || minutes <= 0) return;
@@ -61,6 +62,7 @@ export function PlaySessionProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
+    if (isMiniOverlayWindow) return;
     if (status !== "active") return;
 
     const timer = window.setInterval(() => {
@@ -76,9 +78,11 @@ export function PlaySessionProvider({ children }: { children: ReactNode }) {
     }, 1000);
 
     return () => window.clearInterval(timer);
-  }, [status]);
+  }, [isMiniOverlayWindow, status]);
 
   useEffect(() => {
+    if (isMiniOverlayWindow) return;
+
     if (isSessionActive) {
       localStorage.setItem(
         SESSION_STORAGE_KEY,
@@ -93,9 +97,11 @@ export function PlaySessionProvider({ children }: { children: ReactNode }) {
     }
 
     localStorage.removeItem(SESSION_STORAGE_KEY);
-  }, [isSessionActive, remainingSeconds, selectedDurationMinutes, status]);
+  }, [isMiniOverlayWindow, isSessionActive, remainingSeconds, selectedDurationMinutes, status]);
 
   useEffect(() => {
+    if (isMiniOverlayWindow) return;
+
     if (isSessionActive) {
       openMiniOverlayWindow().catch(() => {
         // ambiente web/dev sem runtime tauri
@@ -106,7 +112,7 @@ export function PlaySessionProvider({ children }: { children: ReactNode }) {
     closeMiniOverlayWindow().catch(() => {
       // ambiente web/dev sem runtime tauri
     });
-  }, [isSessionActive]);
+  }, [isMiniOverlayWindow, isSessionActive]);
 
   const value = useMemo<PlaySessionContextValue>(
     () => ({
